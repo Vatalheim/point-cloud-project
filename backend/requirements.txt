@@ -1,0 +1,6 @@
+fastapi==0.110.0
+uvicorn[standard]==0.28.0
+python-multipart==0.0.9
+laspy[lazrs]==2.5.3
+py3dtiles>=8.0.1,<9.0.0
+pyproj>=3.6.0

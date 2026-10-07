@@ -1,0 +1,23 @@
+# Данные и загрузки
+backend/data/
+*.las
+*.laz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Frontend / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+.vite/
+
+# IDE и OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
