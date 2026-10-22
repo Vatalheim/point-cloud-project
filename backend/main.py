@@ -67,7 +67,7 @@ def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
 
 @app.post("/api/clouds/upload")
 async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    """Задача 3.1: Загрузка и валидация формата и СК"""
+    """Задача 3.1: Загрузка, валидация формата, СК и подсчет количества точек"""
     if not (file.filename.endswith(".las") or file.filename.endswith(".laz")):
         raise HTTPException(status_code=400, detail="Ошибка: принимаются только файлы LAS/LAZ")
 
@@ -77,10 +77,12 @@ async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = Fil
     with open(temp_file_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    # Валидация файла и проверка наличия системы координат (ТЗ: пункт 1.6 и 3.1)
+    # Валидация файла, проверка СК и считывание точного числа точек
+    point_count = 0
     try:
         with laspy.open(temp_file_path) as las_file:
             crs = las_file.header.parse_crs()
+            point_count = int(las_file.header.point_count) # <-- Считываем количество точек
             if not crs:
                 os.remove(temp_file_path)
                 raise HTTPException(
@@ -98,10 +100,11 @@ async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = Fil
     tasks_status[task_id] = {
         "status": "queued",
         "message": "Файл в очереди на обработку",
+        "filename": file.filename,
+        "point_count": point_count, # <-- Передаем в статус задачи
         "tileset_url": None
     }
 
-    # Запуск фонового процесса
     background_tasks.add_task(convert_las_to_3dtiles, task_id, temp_file_path, out_folder)
 
     return {"task_id": task_id, "status": "queued"}
