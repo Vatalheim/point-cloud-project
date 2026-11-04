@@ -273,7 +273,7 @@ export default function App() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:8000/api/clouds/upload", {
+      const res = await fetch("/api/clouds/upload", {
         method: "POST",
         body: formData,
       });
@@ -292,7 +292,7 @@ export default function App() {
   const pollStatus = (taskId, fileName) => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/clouds/status/" + taskId);
+        const res = await fetch("/api/clouds/status/" + taskId);
         const data = await res.json();
 
         if (data.status === "processing") {

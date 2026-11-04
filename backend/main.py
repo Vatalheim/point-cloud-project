@@ -54,8 +54,7 @@ def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
         
         tasks_status[task_id]["status"] = "success"
         tasks_status[task_id]["message"] = "Конвертация успешно завершена"
-        tasks_status[task_id]["tileset_url"] = f"http://localhost:8000/tilesets/{task_id}/tileset.json"
-    except subprocess.TimeoutExpired:
+        tasks_status[task_id]["tileset_url"] = f"/tilesets/{task_id}/tileset.json"    except subprocess.TimeoutExpired:
         tasks_status[task_id]["status"] = "failed"
         tasks_status[task_id]["message"] = "Превышено время ожидания конвертации"
     except subprocess.CalledProcessError as e:

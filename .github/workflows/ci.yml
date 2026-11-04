@@ -7,11 +7,25 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  test-and-build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install Backend Dependencies & Run Pytest
+        run: |
+          cd backend
+          pip install --no-cache-dir --prefer-binary -r requirements.txt
+          pytest test_main.py -v
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,12 +34,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package.json
 
-      - name: Build Frontend
+      - name: Build Frontend SPA
         run: |
           cd frontend
           npm install
           npm run build
 
-      - name: Check Backend Docker Build
+      - name: Check Docker Build
         run: |
-          docker build -t backend:test ./backend
+          docker compose build
