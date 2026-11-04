@@ -22,14 +22,12 @@ TILESET_DIR = Path("/app/data/tilesets")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 TILESET_DIR.mkdir(parents=True, exist_ok=True)
 
-# Хранилище статусов задач в памяти (для MVP)
 tasks_status = {}
 
-# Монтируем статику, чтобы Cesium мог скачивать сгенерированные тайлы
 app.mount("/tilesets", StaticFiles(directory=str(TILESET_DIR)), name="tilesets")
 
 def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
-    """Задача 3.2: Фоновый воркер конвертации (без блокировки буфера)"""
+    """Фоновый воркер конвертации"""
     tasks_status[task_id]["status"] = "processing"
     tasks_status[task_id]["message"] = "Идет конвертация в 3D Tiles..."
     try:
@@ -42,7 +40,6 @@ def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
             "--overwrite"
         ]
         
-        # stdout=subprocess.DEVNULL убирает переполнение буфера и зависание
         subprocess.run(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -54,7 +51,8 @@ def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
         
         tasks_status[task_id]["status"] = "success"
         tasks_status[task_id]["message"] = "Конвертация успешно завершена"
-        tasks_status[task_id]["tileset_url"] = f"/tilesets/{task_id}/tileset.json"    except subprocess.TimeoutExpired:
+        tasks_status[task_id]["tileset_url"] = f"/tilesets/{task_id}/tileset.json"
+    except subprocess.TimeoutExpired:
         tasks_status[task_id]["status"] = "failed"
         tasks_status[task_id]["message"] = "Превышено время ожидания конвертации"
     except subprocess.CalledProcessError as e:
@@ -66,7 +64,7 @@ def convert_las_to_3dtiles(task_id: str, input_path: Path, output_path: Path):
 
 @app.post("/api/clouds/upload")
 async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    """Задача 3.1: Загрузка, валидация формата, СК и подсчет количества точек"""
+    """Загрузка, валидация и подсчет точек"""
     if not (file.filename.endswith(".las") or file.filename.endswith(".laz")):
         raise HTTPException(status_code=400, detail="Ошибка: принимаются только файлы LAS/LAZ")
 
@@ -76,18 +74,20 @@ async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = Fil
     with open(temp_file_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    # Валидация файла, проверка СК и считывание точного числа точек
     point_count = 0
     try:
         with laspy.open(temp_file_path) as las_file:
             crs = las_file.header.parse_crs()
-            point_count = int(las_file.header.point_count) # <-- Считываем количество точек
+            point_count = int(las_file.header.point_count)
             if not crs:
-                os.remove(temp_file_path)
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
                 raise HTTPException(
                     status_code=400, 
                     detail="Внимание: В файле отсутствует информация о системе координат (CRS/SRS)!"
                 )
+    except HTTPException:
+        raise
     except Exception as err:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
@@ -100,7 +100,7 @@ async def upload_cloud(background_tasks: BackgroundTasks, file: UploadFile = Fil
         "status": "queued",
         "message": "Файл в очереди на обработку",
         "filename": file.filename,
-        "point_count": point_count, # <-- Передаем в статус задачи
+        "point_count": point_count,
         "tileset_url": None
     }
 

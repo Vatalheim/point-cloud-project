@@ -275,6 +275,9 @@ export default function App() {
     try {
       const res = await fetch("/api/clouds/upload", {
         method: "POST",
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+        },
         body: formData,
       });
 
@@ -292,7 +295,11 @@ export default function App() {
   const pollStatus = (taskId, fileName) => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/clouds/status/" + taskId);
+        const res = await fetch("/api/clouds/status/" + taskId, {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
         const data = await res.json();
 
         if (data.status === "processing") {
@@ -313,6 +320,8 @@ export default function App() {
       }
     }, 2000);
   };
+
+  
 
   const addCloudToScene = async (id, name, tilesetUrl, pointCount) => {
     const viewer = viewerRef.current;
